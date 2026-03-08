@@ -9,12 +9,52 @@ const TRENDS_CACHE_TABLE = "my9_trends_cache_v1";
 const SHARES_KIND_CREATED_IDX = `${SHARES_TABLE}_kind_created_idx`;
 const TRENDS_CACHE_EXPIRES_IDX = `${TRENDS_CACHE_TABLE}_expires_idx`;
 
+function readEnv(...names: string[]): string | null {
+  for (const name of names) {
+    const value = process.env[name];
+    if (typeof value === "string" && value.trim()) {
+      return value.trim();
+    }
+  }
+  return null;
+}
+
+function buildDatabaseUrlFromParts(options?: { unpooled?: boolean }): string | null {
+  const host = options?.unpooled ? readEnv("PGHOST_UNPOOLED", "POSTGRES_HOST") : readEnv("PGHOST", "POSTGRES_HOST");
+  const user = readEnv("PGUSER", "POSTGRES_USER");
+  const password = readEnv("PGPASSWORD", "POSTGRES_PASSWORD");
+  const database = readEnv("PGDATABASE", "POSTGRES_DATABASE");
+
+  if (!host || !user || !password || !database) {
+    return null;
+  }
+
+  let hostWithPort = host;
+  const port = readEnv("PGPORT");
+  if (port && !host.includes(":")) {
+    hostWithPort = `${host}:${port}`;
+  }
+
+  const sslMode = readEnv("PGSSLMODE") ?? "require";
+  return `postgresql://${encodeURIComponent(user)}:${encodeURIComponent(
+    password
+  )}@${hostWithPort}/${encodeURIComponent(database)}?sslmode=${encodeURIComponent(sslMode)}`;
+}
+
 const DATABASE_URL =
-  process.env.POSTGRES_URL_NON_POOLING ||
-  process.env.POSTGRES_URL ||
-  process.env.DATABASE_URL ||
-  process.env.NEON_DATABASE_URL;
+  readEnv(
+    "POSTGRES_URL_NON_POOLING",
+    "DATABASE_URL_UNPOOLED",
+    "POSTGRES_URL",
+    "DATABASE_URL",
+    "NEON_DATABASE_URL"
+  ) ||
+  buildDatabaseUrlFromParts({ unpooled: true }) ||
+  buildDatabaseUrlFromParts({ unpooled: false });
 const DATABASE_ENABLED = Boolean(DATABASE_URL);
+const MEMORY_FALLBACK_ENABLED =
+  readEnv("MY9_ALLOW_MEMORY_FALLBACK") === "1" ||
+  (readEnv("MY9_ALLOW_MEMORY_FALLBACK") !== "0" && process.env.NODE_ENV !== "production");
 
 type SqlClient = ReturnType<typeof neon>;
 
@@ -50,6 +90,13 @@ type TrendCacheRow = {
   payload: unknown;
   expires_at: number | string;
 };
+
+function throwStorageError(context: string, cause?: unknown): never {
+  if (cause instanceof Error) {
+    throw new Error(`${context}: ${cause.message}`);
+  }
+  throw new Error(context);
+}
 
 function normalizeStoredShare(input: StoredShareV1): StoredShareV1 {
   return {
@@ -203,6 +250,9 @@ export async function saveShare(record: StoredShareV1): Promise<void> {
   const normalizedRecord = normalizeStoredShare(record);
   const sql = getSqlClient();
   if (!sql || !(await ensureSchema())) {
+    if (!MEMORY_FALLBACK_ENABLED) {
+      throwStorageError("saveShare failed: database is not ready");
+    }
     getMemoryStore().shares.set(normalizedRecord.shareId, normalizedRecord);
     return;
   }
@@ -236,13 +286,20 @@ export async function saveShare(record: StoredShareV1): Promise<void> {
         last_viewed_at = EXCLUDED.last_viewed_at
     `;
   } catch {
+    if (!MEMORY_FALLBACK_ENABLED) {
+      throwStorageError("saveShare failed: database write error");
+    }
     getMemoryStore().shares.set(normalizedRecord.shareId, normalizedRecord);
   }
 }
 
 export async function getShare(shareId: string): Promise<StoredShareV1 | null> {
   const sql = getSqlClient();
-  if (sql && (await ensureSchema())) {
+  if (!sql || !(await ensureSchema())) {
+    if (!MEMORY_FALLBACK_ENABLED) {
+      throwStorageError("getShare failed: database is not ready");
+    }
+  } else {
     try {
       const rows = (await sql`
         SELECT share_id, kind, creator_name, games, created_at, updated_at, last_viewed_at
@@ -253,9 +310,15 @@ export async function getShare(shareId: string): Promise<StoredShareV1 | null> {
       if (rows.length > 0) {
         return rowToStoredShare(rows[0]);
       }
-    } catch {
-      // fall through to memory fallback
+    } catch (error) {
+      if (!MEMORY_FALLBACK_ENABLED) {
+        throwStorageError("getShare failed: database read error", error);
+      }
     }
+  }
+
+  if (!MEMORY_FALLBACK_ENABLED) {
+    return null;
   }
 
   const fromMemory = getMemoryStore().shares.get(shareId);
@@ -264,7 +327,11 @@ export async function getShare(shareId: string): Promise<StoredShareV1 | null> {
 
 export async function touchShare(shareId: string, now = Date.now()): Promise<boolean> {
   const sql = getSqlClient();
-  if (sql && (await ensureSchema())) {
+  if (!sql || !(await ensureSchema())) {
+    if (!MEMORY_FALLBACK_ENABLED) {
+      throwStorageError("touchShare failed: database is not ready");
+    }
+  } else {
     try {
       const rows = (await sql`
         UPDATE ${sql.unsafe(SHARES_TABLE)}
@@ -277,9 +344,15 @@ export async function touchShare(shareId: string, now = Date.now()): Promise<boo
       if (rows.length > 0) {
         return true;
       }
-    } catch {
-      // fall through to memory fallback
+    } catch (error) {
+      if (!MEMORY_FALLBACK_ENABLED) {
+        throwStorageError("touchShare failed: database write error", error);
+      }
     }
+  }
+
+  if (!MEMORY_FALLBACK_ENABLED) {
+    return false;
   }
 
   const existing = getMemoryStore().shares.get(shareId);
@@ -294,18 +367,26 @@ export async function touchShare(shareId: string, now = Date.now()): Promise<boo
 
 export async function listAllShares(): Promise<StoredShareV1[]> {
   const sql = getSqlClient();
-  if (sql && (await ensureSchema())) {
+  if (!sql || !(await ensureSchema())) {
+    if (!MEMORY_FALLBACK_ENABLED) {
+      throwStorageError("listAllShares failed: database is not ready");
+    }
+  } else {
     try {
       const rows = (await sql`
         SELECT share_id, kind, creator_name, games, created_at, updated_at, last_viewed_at
         FROM ${sql.unsafe(SHARES_TABLE)}
       `) as ShareRow[];
-      if (rows.length > 0) {
-        return rows.map((row) => rowToStoredShare(row));
+      return rows.map((row) => rowToStoredShare(row));
+    } catch (error) {
+      if (!MEMORY_FALLBACK_ENABLED) {
+        throwStorageError("listAllShares failed: database read error", error);
       }
-    } catch {
-      // fall through to memory fallback
     }
+  }
+
+  if (!MEMORY_FALLBACK_ENABLED) {
+    return [];
   }
 
   return Array.from(getMemoryStore().shares.values()).map((item) => normalizeStoredShare(item));
@@ -329,7 +410,11 @@ export async function listSharesByPeriod(period: TrendPeriod): Promise<StoredSha
   const sql = getSqlClient();
   const from = getPeriodStart(period);
 
-  if (sql && (await ensureSchema())) {
+  if (!sql || !(await ensureSchema())) {
+    if (!MEMORY_FALLBACK_ENABLED) {
+      throwStorageError("listSharesByPeriod failed: database is not ready");
+    }
+  } else {
     try {
       if (from > 0) {
         const rows = (await sql`
@@ -345,9 +430,15 @@ export async function listSharesByPeriod(period: TrendPeriod): Promise<StoredSha
         FROM ${sql.unsafe(SHARES_TABLE)}
       `) as ShareRow[];
       return rows.map((row) => rowToStoredShare(row));
-    } catch {
-      // fall through to memory fallback
+    } catch (error) {
+      if (!MEMORY_FALLBACK_ENABLED) {
+        throwStorageError("listSharesByPeriod failed: database read error", error);
+      }
     }
+  }
+
+  if (!MEMORY_FALLBACK_ENABLED) {
+    return [];
   }
 
   const all = Array.from(getMemoryStore().shares.values()).map((item) => normalizeStoredShare(item));
@@ -360,11 +451,17 @@ export async function getTrendsCache(
   kind: SubjectKind
 ): Promise<TrendResponse | null> {
   const key = trendCacheKey(period, view, kind);
-  const fromMemory = getMemoryTrendCache(key);
-  if (fromMemory) return fromMemory;
+  if (MEMORY_FALLBACK_ENABLED) {
+    const fromMemory = getMemoryTrendCache(key);
+    if (fromMemory) return fromMemory;
+  }
 
   const sql = getSqlClient();
-  if (sql && (await ensureSchema())) {
+  if (!sql || !(await ensureSchema())) {
+    if (!MEMORY_FALLBACK_ENABLED) {
+      throwStorageError("getTrendsCache failed: database is not ready");
+    }
+  } else {
     try {
       const rows = (await sql`
         SELECT payload, expires_at
@@ -386,15 +483,19 @@ export async function getTrendsCache(
 
         const payload = parseTrendPayload(row.payload);
         if (payload) {
-          getMemoryStore().trendCache.set(key, {
-            value: payload,
-            expiresAt,
-          });
+          if (MEMORY_FALLBACK_ENABLED) {
+            getMemoryStore().trendCache.set(key, {
+              value: payload,
+              expiresAt,
+            });
+          }
           return payload;
         }
       }
-    } catch {
-      // fall through
+    } catch (error) {
+      if (!MEMORY_FALLBACK_ENABLED) {
+        throwStorageError("getTrendsCache failed: database read error", error);
+      }
     }
   }
 
@@ -410,13 +511,18 @@ export async function setTrendsCache(
 ): Promise<void> {
   const key = trendCacheKey(period, view, kind);
   const expiresAt = Date.now() + ttlSeconds * 1000;
-  getMemoryStore().trendCache.set(key, {
-    value,
-    expiresAt,
-  });
+  if (MEMORY_FALLBACK_ENABLED) {
+    getMemoryStore().trendCache.set(key, {
+      value,
+      expiresAt,
+    });
+  }
 
   const sql = getSqlClient();
   if (!sql || !(await ensureSchema())) {
+    if (!MEMORY_FALLBACK_ENABLED) {
+      throwStorageError("setTrendsCache failed: database is not ready");
+    }
     return;
   }
 
@@ -448,7 +554,9 @@ export async function setTrendsCache(
         expires_at = EXCLUDED.expires_at,
         updated_at = EXCLUDED.updated_at
     `;
-  } catch {
-    // ignore database failures and keep in-memory cache
+  } catch (error) {
+    if (!MEMORY_FALLBACK_ENABLED) {
+      throwStorageError("setTrendsCache failed: database write error", error);
+    }
   }
 }

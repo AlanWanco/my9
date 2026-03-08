@@ -50,7 +50,9 @@
 - 在 `.env.local`（勿提交）中配置：
   - `BANGUMI_ACCESS_TOKEN`
   - `BANGUMI_USER_AGENT`
-  - `POSTGRES_URL_NON_POOLING`（推荐）或 `POSTGRES_URL` / `DATABASE_URL` / `NEON_DATABASE_URL`（启用分享/趋势持久化）
+  - `POSTGRES_URL_NON_POOLING`（推荐）或 `DATABASE_URL_UNPOOLED` / `POSTGRES_URL` / `DATABASE_URL` / `NEON_DATABASE_URL`（启用分享/趋势持久化）
+  - 也支持通过 `PGHOST(_UNPOOLED)` + `PGUSER` + `PGPASSWORD` + `PGDATABASE`（可选 `PGPORT`/`PGSSLMODE`）自动拼接连接串
+  - 生产环境默认禁用内存 fallback（数据库异常会直接报错）；可用 `MY9_ALLOW_MEMORY_FALLBACK=1` 临时放开
 - 分享图封面当前通过 `wsrv.nl` 在前端拉取并绘制；修改该链路时需评估跨域与流量成本影响。
 
 ## 提交与 PR 建议
