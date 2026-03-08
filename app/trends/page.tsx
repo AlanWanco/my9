@@ -1,8 +1,10 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
+import { SiteFooter } from "@/components/layout/SiteFooter";
 import type { TrendResponse, TrendPeriod, TrendView } from "@/lib/share/types";
 
 type TrendsApiResponse = TrendResponse & { ok: boolean };
@@ -187,9 +189,12 @@ export default function TrendsPage() {
                       <div className="flex items-start gap-2.5">
                         <div className="h-14 w-10 flex-shrink-0 overflow-hidden rounded border border-slate-200 bg-slate-100">
                           {bucket.games[0].cover ? (
-                            <img
+                            <Image
                               src={bucket.games[0].cover}
                               alt={bucket.games[0].name}
+                              width={40}
+                              height={56}
+                              unoptimized
                               className="h-full w-full object-cover"
                             />
                           ) : (
@@ -216,22 +221,7 @@ export default function TrendsPage() {
           ) : null}
         </section>
 
-        <footer className="mx-auto w-full max-w-2xl border-t border-slate-500 pt-8 text-center text-xs text-slate-500">
-          <p className="mb-2">
-            <a href="/privacy-policy" className="hover:text-sky-500 hover:underline">
-              隐私政策
-            </a>
-            <span className="mx-1">|</span>
-            <a href="/agreement" className="hover:text-sky-500 hover:underline">
-              使用条款
-            </a>
-            <span className="mx-1">|</span>
-            <a href="/commercial-disclosure" className="hover:text-sky-500 hover:underline">
-              商业声明
-            </a>
-          </p>
-          <p>© 2026 My 9 Games | 构成我的9款游戏</p>
-        </footer>
+        <SiteFooter />
       </div>
     </main>
   );

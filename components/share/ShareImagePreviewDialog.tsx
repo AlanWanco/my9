@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
@@ -100,7 +101,7 @@ export function ShareImagePreviewDialog({
     }
 
     loadPreview();
-  }, [open, shareId, title, withQr]);
+  }, [creatorName, games, open, shareId, title, withQr]);
 
   async function handleDownload() {
     try {
@@ -132,11 +133,16 @@ export function ShareImagePreviewDialog({
                 正在生成图片...
               </div>
             ) : previewUrl ? (
-              <img
-                src={previewUrl}
-                alt="分享图片预览"
-                className="mx-auto max-h-[46vh] w-auto max-w-full object-contain"
-              />
+              <div className="relative h-[46vh] min-h-[300px]">
+                <Image
+                  src={previewUrl}
+                  alt="分享图片预览"
+                  fill
+                  unoptimized
+                  className="mx-auto object-contain"
+                  sizes="(max-width: 768px) 95vw, 768px"
+                />
+              </div>
             ) : (
               <div className="flex h-[46vh] min-h-[300px] items-center justify-center text-sm text-rose-500">
                 {previewError || "预览图加载失败"}

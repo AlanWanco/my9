@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Input } from "@/components/ui/input";
 import { SharePlatformActions } from "@/components/share/SharePlatformActions";
+import { SiteFooter } from "@/components/layout/SiteFooter";
 import { ActionCluster } from "@/app/components/v3/ActionCluster";
 import { CommentDialog } from "@/app/components/v3/CommentDialog";
 import { InlineToast, ToastKind } from "@/app/components/v3/InlineToast";
@@ -34,6 +35,14 @@ const DEFAULT_SEARCH_SUGGESTIONS = [
   "中日英名称切换检索通常更有效",
   "减少关键词，仅保留核心词",
 ];
+
+function createSearchMeta(noResultQuery: string | null = null): SearchMeta {
+  return {
+    topPickIds: [],
+    suggestions: DEFAULT_SEARCH_SUGGESTIONS,
+    noResultQuery,
+  };
+}
 
 function createEmptyGames() {
   return Array.from({ length: 9 }, () => null as ShareGame | null);
@@ -71,11 +80,7 @@ export default function My9V3App({
   const [searchError, setSearchError] = useState("");
   const [searchResults, setSearchResults] = useState<ShareGame[]>([]);
   const [searchActiveIndex, setSearchActiveIndex] = useState(-1);
-  const [searchMeta, setSearchMeta] = useState<SearchMeta>({
-    topPickIds: [],
-    suggestions: DEFAULT_SEARCH_SUGGESTIONS,
-    noResultQuery: null,
-  });
+  const [searchMeta, setSearchMeta] = useState<SearchMeta>(createSearchMeta());
 
   const [commentOpen, setCommentOpen] = useState(false);
   const [commentText, setCommentText] = useState("");
@@ -95,12 +100,13 @@ export default function My9V3App({
 
   useEffect(() => {
     if (!initialShareId) return;
+    const currentShareId: string = initialShareId;
     let active = true;
 
     async function loadShared() {
       setLoadingShare(true);
       try {
-        const response = await fetch(`/api/share?id=${encodeURIComponent(initialShareId)}`, {
+        const response = await fetch(`/api/share?id=${encodeURIComponent(currentShareId)}`, {
           cache: "no-store",
         });
         const json = await response.json();
@@ -114,7 +120,7 @@ export default function My9V3App({
         const payloadGames = Array.isArray(json.games) ? json.games : createEmptyGames();
         setGames(payloadGames.length === 9 ? payloadGames : createEmptyGames());
         setCreatorName(typeof json.creatorName === "string" ? json.creatorName : "");
-        setShareId(json.shareId || initialShareId);
+        setShareId(json.shareId || currentShareId);
       } catch {
         if (!active) return;
         setToast({ kind: "error", message: "共享页面加载失败" });
@@ -254,11 +260,7 @@ export default function My9V3App({
       if (!response.ok || !json?.ok) {
         setSearchError(json?.error || "搜索失败，请稍后再试");
         setSearchResults([]);
-        setSearchMeta({
-          topPickIds: [],
-          suggestions: DEFAULT_SEARCH_SUGGESTIONS,
-          noResultQuery: q,
-        });
+        setSearchMeta(createSearchMeta(q));
         return;
       }
 
@@ -275,11 +277,7 @@ export default function My9V3App({
     } catch {
       setSearchError("搜索失败，请稍后再试");
       setSearchResults([]);
-      setSearchMeta({
-        topPickIds: [],
-        suggestions: DEFAULT_SEARCH_SUGGESTIONS,
-        noResultQuery: q,
-      });
+      setSearchMeta(createSearchMeta(q));
     } finally {
       setSearchLoading(false);
     }
@@ -292,11 +290,7 @@ export default function My9V3App({
     setSearchError("");
     setSearchResults([]);
     setSearchActiveIndex(-1);
-    setSearchMeta({
-      topPickIds: [],
-      suggestions: DEFAULT_SEARCH_SUGGESTIONS,
-      noResultQuery: null,
-    });
+    setSearchMeta(createSearchMeta());
     window.setTimeout(() => setSearchOpen(true), 0);
   }
 
@@ -502,22 +496,7 @@ export default function My9V3App({
           onOpenComment={openComment}
         />
 
-        <footer className="w-full max-w-2xl border-t border-slate-500 pt-8 text-center text-xs text-slate-500">
-          <p className="mb-2">
-            <a href="/privacy-policy" className="hover:text-sky-500 hover:underline">
-              隐私政策
-            </a>
-            <span className="mx-1">|</span>
-            <a href="/agreement" className="hover:text-sky-500 hover:underline">
-              使用条款
-            </a>
-            <span className="mx-1">|</span>
-            <a href="/commercial-disclosure" className="hover:text-sky-500 hover:underline">
-              商业声明
-            </a>
-          </p>
-          <p>© 2026 My 9 Games | 构成我的9款游戏</p>
-        </footer>
+        <SiteFooter className="w-full" />
       </div>
 
       <SearchDialog
@@ -558,5 +537,3 @@ export default function My9V3App({
     </main>
   );
 }
-
-

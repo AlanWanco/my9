@@ -1,3 +1,4 @@
+/* eslint-disable @next/next/no-img-element */
 import { ImageResponse } from "next/og";
 import { StoredShareV1 } from "@/lib/share/types";
 
@@ -14,10 +15,7 @@ function gameName(game: StoredShareV1["games"][number]) {
   return game.localizedName?.trim() || game.name;
 }
 
-export function createShareImageResponse(params: {
-  share: StoredShareV1;
-  title?: string;
-}) {
+export function createShareImageResponse(params: { share: StoredShareV1 }) {
   const { share } = params;
   const creator = displayName(share.creatorName);
 

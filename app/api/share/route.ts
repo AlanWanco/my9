@@ -12,50 +12,57 @@ function sanitizeString(value: unknown): string {
   return value.trim();
 }
 
-function sanitizeGame(input: any): ShareGame | null {
-  if (!input || typeof input !== "object") return null;
+function toRecord(value: unknown): Record<string, unknown> | null {
+  if (!value || typeof value !== "object") return null;
+  return value as Record<string, unknown>;
+}
 
-  const name = sanitizeString(input.name);
+function sanitizeGame(input: unknown): ShareGame | null {
+  const game = toRecord(input);
+  if (!game) return null;
+
+  const name = sanitizeString(game.name);
   if (!name) return null;
 
   const id =
-    typeof input.id === "number" || typeof input.id === "string"
-      ? input.id
+    typeof game.id === "number" || typeof game.id === "string"
+      ? game.id
       : String(name);
-  const coverRaw = input.cover;
+  const coverRaw = game.cover;
   const cover = typeof coverRaw === "string" && coverRaw.trim() ? coverRaw.trim() : null;
 
-  const commentRaw = sanitizeString(input.comment);
+  const commentRaw = sanitizeString(game.comment);
   const comment = commentRaw ? commentRaw.slice(0, MAX_COMMENT_LENGTH) : undefined;
-  const spoiler = Boolean(input.spoiler);
+  const spoiler = Boolean(game.spoiler);
 
   const releaseYear =
-    typeof input.releaseYear === "number" && Number.isFinite(input.releaseYear)
-      ? Math.trunc(input.releaseYear)
+    typeof game.releaseYear === "number" && Number.isFinite(game.releaseYear)
+      ? Math.trunc(game.releaseYear)
       : undefined;
 
   const gameTypeId =
-    typeof input.gameTypeId === "number" && VALID_GAME_TYPES.has(input.gameTypeId as GameTypeId)
-      ? (input.gameTypeId as GameTypeId)
+    typeof game.gameTypeId === "number" && VALID_GAME_TYPES.has(game.gameTypeId as GameTypeId)
+      ? (game.gameTypeId as GameTypeId)
       : undefined;
 
-  const localizedName = sanitizeString(input.localizedName) || undefined;
-  const platforms = Array.isArray(input.platforms)
-    ? input.platforms
+  const localizedName = sanitizeString(game.localizedName) || undefined;
+  const platforms = Array.isArray(game.platforms)
+    ? game.platforms
         .map((item: unknown) => sanitizeString(item))
         .filter((item: string) => Boolean(item))
     : undefined;
-  const genres = Array.isArray(input.genres)
-    ? input.genres
+  const genres = Array.isArray(game.genres)
+    ? game.genres
         .map((item: unknown) => sanitizeString(item))
         .filter((item: string) => Boolean(item))
         .slice(0, 5)
     : undefined;
 
+  const rawStoreUrls = toRecord(game.storeUrls);
   const storeUrls =
-    input.storeUrls && typeof input.storeUrls === "object"
+    rawStoreUrls
       ? Object.fromEntries(
-          Object.entries(input.storeUrls as Record<string, unknown>).flatMap(
+          Object.entries(rawStoreUrls).flatMap(
             ([key, value]) => {
               const cleanKey = sanitizeString(key);
               const cleanValue = sanitizeString(value);

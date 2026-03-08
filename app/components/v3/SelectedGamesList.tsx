@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { AlertTriangle, Globe, MessageCircle } from "lucide-react";
 import { ShareGame } from "@/lib/share/types";
 
@@ -60,10 +61,13 @@ export function SelectedGamesList({
 
                 <div className="-ml-0.5 w-14 flex-shrink-0 overflow-hidden rounded-lg border border-gray-200 bg-gray-100 shadow-sm sm:-ml-1 sm:w-16">
                   {game.cover ? (
-                    <img
+                    <Image
                       src={game.cover}
                       alt={game.name}
-                      className="h-full w-full object-contain"
+                      width={64}
+                      height={86}
+                      unoptimized
+                      className="h-auto w-full object-contain"
                     />
                   ) : (
                     <div className="flex aspect-[3/4] items-center justify-center text-[11px] text-gray-400">

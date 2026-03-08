@@ -107,7 +107,7 @@ function buildGenreBuckets(shares: StoredShareV1[]): TrendBucket[] {
   }
 
   const buckets: TrendBucket[] = [];
-  for (const [genre, games] of genreMap.entries()) {
+  for (const [genre, games] of Array.from(genreMap.entries())) {
     const sortedGames = sortByCount(Array.from(games.values()));
     const total = sortedGames.reduce((sum, item) => sum + item.count, 0);
     buckets.push({
@@ -161,7 +161,7 @@ function buildYearLikeBuckets(
   }
 
   const buckets: TrendBucket[] = [];
-  for (const [bucket, gameMap] of bucketMap.entries()) {
+  for (const [bucket, gameMap] of Array.from(bucketMap.entries())) {
     const games = sortByCount(Array.from(gameMap.values())).slice(0, 5);
     const total = games.reduce((sum, item) => sum + item.count, 0);
     buckets.push({
@@ -216,4 +216,3 @@ export function buildTrendResponse(params: {
     items,
   };
 }
-

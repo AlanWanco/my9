@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { MessageSquare, Plus, X } from "lucide-react";
 import { ShareGame } from "@/lib/share/types";
 import { cn } from "@/lib/utils";
@@ -48,10 +49,13 @@ export function NineGridBoard({
             )}
           >
             {game?.cover ? (
-              <img
+              <Image
                 src={game.cover}
                 alt={displayTitle(game)}
-                className="absolute inset-0 h-full w-full object-cover"
+                fill
+                unoptimized
+                className="absolute inset-0 object-cover"
+                sizes="(max-width: 640px) 96px, (max-width: 768px) 128px, 144px"
               />
             ) : (
               <div className="absolute inset-0 flex flex-col items-center justify-center gap-1 text-xs font-medium text-gray-400">
