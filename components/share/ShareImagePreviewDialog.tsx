@@ -218,7 +218,7 @@ export function ShareImagePreviewDialog({
           <Button
             type="button"
             onClick={handleDownload}
-            disabled={loading || Boolean(previewError)}
+            disabled={loading}
             className="bg-gray-900 text-white hover:bg-gray-800"
           >
             保存图片

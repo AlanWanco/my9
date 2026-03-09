@@ -27,7 +27,7 @@ export function SiteFooter({ className }: SiteFooterProps) {
       </p>
       <p className="mt-2">
         <a
-          href="https://weibo.com/6571509464/Phs2X0DIy"
+          href="https://weibo.com/6571509464/Qvg19sR1Z"
           target="_blank"
           rel="noreferrer"
           className="font-semibold text-sky-600 hover:underline"

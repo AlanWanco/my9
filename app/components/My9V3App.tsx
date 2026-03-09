@@ -510,7 +510,7 @@ export default function My9V3App({
             <p className="rounded-full border border-amber-200 bg-amber-50 px-4 py-1.5 text-xs font-semibold text-amber-700">
               这是共享页面（只读）
             </p>
-            <p className="text-sm text-gray-600">创作者: {creatorName.trim() || "匿名玩家"}</p>
+            <p className="text-sm text-gray-600">创作者: {creatorName.trim() || "匿名"}</p>
             <button
               type="button"
               className="inline-flex items-center justify-center gap-2 rounded-full border border-gray-200 bg-white px-5 py-2 text-sm font-bold text-gray-700 transition-colors hover:bg-gray-50"
