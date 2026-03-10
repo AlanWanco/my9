@@ -30,8 +30,8 @@ const SUBJECT_DIM_TABLE = "my9_subject_dim_v1";
 const TREND_COUNT_ALL_TABLE = "my9_trend_subject_all_v2";
 const TREND_COUNT_DAY_TABLE = "my9_trend_subject_day_v2";
 const TRENDS_CACHE_TABLE = "my9_trends_cache_v1";
-const TRENDS_CACHE_VERSION = "v5";
-const TRENDS_SAMPLE_CACHE_VERSION = "v1";
+const TRENDS_CACHE_VERSION = "v6";
+const TRENDS_SAMPLE_CACHE_VERSION = "v2";
 const SAMPLE_SUMMARY_CACHE_VIEW = "sample";
 const OVERALL_TREND_PAGE_SIZE = 20;
 const GROUPED_BUCKET_LIMIT = 20;
@@ -78,6 +78,7 @@ const DATABASE_ENABLED = Boolean(DATABASE_URL);
 const MEMORY_FALLBACK_ENABLED =
   readEnv("MY9_ALLOW_MEMORY_FALLBACK") === "1" ||
   (readEnv("MY9_ALLOW_MEMORY_FALLBACK") !== "0" && process.env.NODE_ENV !== "production");
+const TREND_MEMORY_CACHE_ENABLED = MEMORY_FALLBACK_ENABLED && process.env.NODE_ENV !== "production";
 const V1_FALLBACK_ENABLED = readEnv("MY9_ENABLE_V1_FALLBACK") !== "0";
 
 type SqlClient = ReturnType<typeof neon>;
@@ -1720,14 +1721,14 @@ export async function getTrendSampleSummaryCache(
   kind: SubjectKind
 ): Promise<TrendSampleSummary | null> {
   const key = trendSampleCacheKey(period, kind);
-  if (MEMORY_FALLBACK_ENABLED) {
+  if (TREND_MEMORY_CACHE_ENABLED) {
     const fromMemory = getMemoryTrendSampleSummaryCache(key);
     if (fromMemory) return fromMemory;
   }
 
   const sql = getSqlClient();
   if (!sql || !(await ensureSchema())) {
-    if (!MEMORY_FALLBACK_ENABLED) {
+    if (!TREND_MEMORY_CACHE_ENABLED) {
       throwDatabaseNotReady("getTrendSampleSummaryCache failed");
     }
   } else {
@@ -1752,7 +1753,7 @@ export async function getTrendSampleSummaryCache(
 
         const payload = parseTrendSampleSummaryPayload(row.payload);
         if (payload) {
-          if (MEMORY_FALLBACK_ENABLED) {
+          if (TREND_MEMORY_CACHE_ENABLED) {
             getMemoryStore().trendSampleCache.set(key, {
               value: payload,
               expiresAt,
@@ -1762,7 +1763,7 @@ export async function getTrendSampleSummaryCache(
         }
       }
     } catch (error) {
-      if (!MEMORY_FALLBACK_ENABLED) {
+      if (!TREND_MEMORY_CACHE_ENABLED) {
         throwStorageError("getTrendSampleSummaryCache failed: database read error", error);
       }
     }
@@ -1780,7 +1781,7 @@ export async function setTrendSampleSummaryCache(
   const key = trendSampleCacheKey(period, kind);
   const expiresAt = Date.now() + ttlSeconds * 1000;
 
-  if (MEMORY_FALLBACK_ENABLED) {
+  if (TREND_MEMORY_CACHE_ENABLED) {
     getMemoryStore().trendSampleCache.set(key, {
       value,
       expiresAt,
@@ -1789,7 +1790,7 @@ export async function setTrendSampleSummaryCache(
 
   const sql = getSqlClient();
   if (!sql || !(await ensureSchema())) {
-    if (!MEMORY_FALLBACK_ENABLED) {
+    if (!TREND_MEMORY_CACHE_ENABLED) {
       throwDatabaseNotReady("setTrendSampleSummaryCache failed");
     }
     return;
@@ -1824,7 +1825,7 @@ export async function setTrendSampleSummaryCache(
         updated_at = EXCLUDED.updated_at
     `;
   } catch (error) {
-    if (!MEMORY_FALLBACK_ENABLED) {
+    if (!TREND_MEMORY_CACHE_ENABLED) {
       throwStorageError("setTrendSampleSummaryCache failed: database write error", error);
     }
   }
@@ -1838,14 +1839,14 @@ export async function getTrendsCache(
   yearPage: TrendYearPage
 ): Promise<TrendResponse | null> {
   const key = trendCacheKey(period, view, kind, overallPage, yearPage);
-  if (MEMORY_FALLBACK_ENABLED) {
+  if (TREND_MEMORY_CACHE_ENABLED) {
     const fromMemory = getMemoryTrendCache(key);
     if (fromMemory) return fromMemory;
   }
 
   const sql = getSqlClient();
   if (!sql || !(await ensureSchema())) {
-    if (!MEMORY_FALLBACK_ENABLED) {
+    if (!TREND_MEMORY_CACHE_ENABLED) {
       throwDatabaseNotReady("getTrendsCache failed");
     }
   } else {
@@ -1870,7 +1871,7 @@ export async function getTrendsCache(
 
         const payload = parseTrendPayload(row.payload);
         if (payload) {
-          if (MEMORY_FALLBACK_ENABLED) {
+          if (TREND_MEMORY_CACHE_ENABLED) {
             getMemoryStore().trendCache.set(key, {
               value: payload,
               expiresAt,
@@ -1880,7 +1881,7 @@ export async function getTrendsCache(
         }
       }
     } catch (error) {
-      if (!MEMORY_FALLBACK_ENABLED) {
+      if (!TREND_MEMORY_CACHE_ENABLED) {
         throwStorageError("getTrendsCache failed: database read error", error);
       }
     }
@@ -1900,7 +1901,7 @@ export async function setTrendsCache(
 ): Promise<void> {
   const key = trendCacheKey(period, view, kind, overallPage, yearPage);
   const expiresAt = Date.now() + ttlSeconds * 1000;
-  if (MEMORY_FALLBACK_ENABLED) {
+  if (TREND_MEMORY_CACHE_ENABLED) {
     getMemoryStore().trendCache.set(key, {
       value,
       expiresAt,
@@ -1909,7 +1910,7 @@ export async function setTrendsCache(
 
   const sql = getSqlClient();
   if (!sql || !(await ensureSchema())) {
-    if (!MEMORY_FALLBACK_ENABLED) {
+    if (!TREND_MEMORY_CACHE_ENABLED) {
       throwDatabaseNotReady("setTrendsCache failed");
     }
     return;
@@ -1944,7 +1945,7 @@ export async function setTrendsCache(
         updated_at = EXCLUDED.updated_at
     `;
   } catch (error) {
-    if (!MEMORY_FALLBACK_ENABLED) {
+    if (!TREND_MEMORY_CACHE_ENABLED) {
       throwStorageError("setTrendsCache failed: database write error", error);
     }
   }
