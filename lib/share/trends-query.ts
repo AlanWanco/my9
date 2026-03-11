@@ -63,6 +63,15 @@ function toSampleSummary(response: TrendResponse): TrendSampleSummary {
   };
 }
 
+function isSameSampleSummary(a: TrendSampleSummary | null, b: TrendSampleSummary | null): boolean {
+  if (!a || !b) return false;
+  return (
+    a.sampleCount === b.sampleCount &&
+    a.range.from === b.range.from &&
+    a.range.to === b.range.to
+  );
+}
+
 function suppressSmallSamples(response: TrendResponse): TrendResponse {
   if (response.sampleCount < 30) {
     return {
@@ -204,10 +213,30 @@ async function resolveTrendResponseInternal(params: ResolveTrendParams): Promise
 
   const cached = await safeGetTrendsCache(params, false);
   if (cached) {
-    const mergedSampleCount = sampleSummary ? Math.max(sampleSummary.sampleCount, cached.sampleCount) : cached.sampleCount;
+    let mergedSampleCount = sampleSummary ? Math.max(sampleSummary.sampleCount, cached.sampleCount) : cached.sampleCount;
+    let shouldBypassCached = false;
+
+    // `today` is vulnerable to low-sample seed cache after midnight.
+    // If cached payload is empty and sample < 30, probe live summary once.
+    if (period === "today" && cached.items.length === 0 && mergedSampleCount < 30) {
+      const liveSummary = await safeGetTrendSampleSummary(period, kind);
+      if (liveSummary) {
+        mergedSampleCount = Math.max(mergedSampleCount, liveSummary.sampleCount);
+        if (!isSameSampleSummary(sampleSummary, liveSummary)) {
+          sampleSummary = liveSummary;
+          await safeSetTrendSampleSummaryCache(period, kind, liveSummary);
+        } else {
+          sampleSummary = liveSummary;
+        }
+        if (liveSummary.sampleCount >= 30) {
+          shouldBypassCached = true;
+        }
+      }
+    }
+
     const cachedLooksStaleSuppressed = cached.items.length === 0 && mergedSampleCount >= 30;
 
-    if (!cachedLooksStaleSuppressed) {
+    if (!cachedLooksStaleSuppressed && !shouldBypassCached) {
       if (!sampleSummary) {
         const cachedLooksSuppressedSmallSample = cached.items.length === 0 && cached.sampleCount > 0 && cached.sampleCount < 30;
         if (!cachedLooksSuppressedSmallSample) {
