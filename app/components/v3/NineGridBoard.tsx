@@ -11,10 +11,10 @@ import { cn } from "@/lib/utils";
 interface NineGridBoardProps {
   games: Array<ShareGame | null>;
   subjectLabel: string;
-  readOnly: boolean;
-  onSelectSlot: (index: number) => void;
-  onRemoveSlot: (index: number) => void;
-  onOpenComment: (index: number) => void;
+  readOnly?: boolean;
+  onSelectSlot?: (index: number) => void;
+  onRemoveSlot?: (index: number) => void;
+  onOpenComment?: (index: number) => void;
   onReorder?: (games: Array<ShareGame | null>) => void;
 }
 
@@ -43,11 +43,11 @@ interface GridCellProps {
   game: ShareGame | null;
   index: number;
   subjectLabel: string;
-  readOnly: boolean;
-  isDragSource: boolean;
-  onSelectSlot: (index: number) => void;
-  onRemoveSlot: (index: number) => void;
-  onOpenComment: (index: number) => void;
+  readOnly?: boolean;
+  isDragSource?: boolean;
+  onSelectSlot?: (index: number) => void;
+  onRemoveSlot?: (index: number) => void;
+  onOpenComment?: (index: number) => void;
 }
 
 function GridCell({
@@ -68,13 +68,13 @@ function GridCell({
         aria-label={readOnly ? undefined : `选择第 ${index + 1} 格${subjectLabel}`}
         onClick={() => {
           if (readOnly) return;
-          onSelectSlot(index);
+          onSelectSlot?.(index);
         }}
         onKeyDown={(event) => {
           if (readOnly) return;
           if (event.key === "Enter" || event.key === " ") {
             event.preventDefault();
-            onSelectSlot(index);
+            onSelectSlot?.(index);
           }
         }}
         className={cn(
@@ -111,7 +111,7 @@ function GridCell({
             aria-label={`编辑第 ${index + 1} 格评论`}
             onClick={(event) => {
               event.stopPropagation();
-              onOpenComment(index);
+              onOpenComment?.(index);
             }}
             className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-black/70 text-white transition hover:bg-sky-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/90"
           >
@@ -122,7 +122,7 @@ function GridCell({
             aria-label={`移除第 ${index + 1} 格游戏`}
             onClick={(event) => {
               event.stopPropagation();
-              onRemoveSlot(index);
+              onRemoveSlot?.(index);
             }}
             className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-black/70 text-white transition hover:bg-rose-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/90"
           >
@@ -143,6 +143,50 @@ export function NineGridBoard({
   onOpenComment,
   onReorder,
 }: NineGridBoardProps) {
+  const grid = (
+    <div className="w-full grid grid-cols-3 gap-2 sm:gap-3">
+      {games.map((game, index) => {
+        const id = game ? `subject-${game.id}` : `empty-${index}`;
+
+        if (readOnly) {
+          return (
+            <div key={id} className="relative">
+              <GridCell
+                game={game}
+                index={index}
+                subjectLabel={subjectLabel}
+                readOnly
+              />
+            </div>
+          );
+        }
+
+        return (
+          <SortableSlot
+            key={id}
+            id={id}
+            index={index}
+            disabled={!game}
+          >
+            {(isDragSource) => (
+              <GridCell
+                game={game}
+                index={index}
+                subjectLabel={subjectLabel}
+                isDragSource={isDragSource}
+                onSelectSlot={onSelectSlot}
+                onRemoveSlot={onRemoveSlot}
+                onOpenComment={onOpenComment}
+              />
+            )}
+          </SortableSlot>
+        );
+      })}
+    </div>
+  );
+
+  if (readOnly) return grid;
+
   return (
     <DragDropProvider
       onDragEnd={(event) => {
@@ -155,32 +199,7 @@ export function NineGridBoard({
         onReorder(arrayMove(games, from, to));
       }}
     >
-      <div className="w-full grid grid-cols-3 gap-2 sm:gap-3">
-        {games.map((game, index) => {
-          const id = game ? `subject-${game.id}` : `empty-${index}`;
-          return (
-            <SortableSlot
-              key={id}
-              id={id}
-              index={index}
-              disabled={readOnly || !game}
-            >
-              {(isDragSource) => (
-                <GridCell
-                  game={game}
-                  index={index}
-                  subjectLabel={subjectLabel}
-                  readOnly={readOnly}
-                  isDragSource={isDragSource}
-                  onSelectSlot={onSelectSlot}
-                  onRemoveSlot={onRemoveSlot}
-                  onOpenComment={onOpenComment}
-                />
-              )}
-            </SortableSlot>
-          );
-        })}
-      </div>
+      {grid}
     </DragDropProvider>
   );
 }
