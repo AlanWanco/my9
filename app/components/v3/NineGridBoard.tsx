@@ -3,6 +3,7 @@
 import Image from "next/image";
 import { MessageSquare, Plus, X } from "lucide-react";
 import { DragDropProvider } from "@dnd-kit/react";
+import { Feedback, AutoScroller, Cursor } from '@dnd-kit/dom';
 import { useSortable, isSortable } from "@dnd-kit/react/sortable";
 import { arrayMove } from "@dnd-kit/helpers";
 import { ShareGame } from "@/lib/share/types";
@@ -189,6 +190,11 @@ export function NineGridBoard({
 
   return (
     <DragDropProvider
+      plugins={[
+        Feedback,
+        AutoScroller,
+        Cursor
+      ]}
       onDragEnd={(event) => {
         if (!onReorder) return;
         const { source, canceled } = event.operation;
