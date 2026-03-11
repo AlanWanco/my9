@@ -23,6 +23,21 @@ const donationAcknowledgements: Array<{
   message: string;
 }> = [
   {
+    date: "2026-03-11",
+    amount: "52",
+    message: "Love explosions！",
+  },
+  {
+    date: "2026-03-11",
+    amount: "100",
+    message: "希望旻妈妈增加拖拽功能！",
+  },
+  {
+    date: "2026-03-11",
+    amount: "1",
+    message: "加油",
+  },
+  {
     date: "2026-03-10",
     amount: "50",
     message: "虽然今天不是星期四但是看起来已经足够疯狂了",

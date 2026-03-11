@@ -413,7 +413,7 @@ export default function TrendsClientPage({
               <p className="text-xs text-slate-500">最后更新：{formatDateTime(data?.lastUpdatedAt ?? null)}</p>
             </div>
 
-            <div className="space-y-2 sm:flex sm:flex-col sm:items-end mt-auto">
+            <div className="space-y-2 flex flex-col items-start sm:items-end mt-auto">
               <div className="overflow-x-auto sm:overflow-visible">
                 <div className="inline-flex overflow-hidden rounded-full border border-slate-300 bg-white">
                   {SUBJECT_KIND_ORDER.map((option) => {
@@ -423,7 +423,7 @@ export default function TrendsClientPage({
                         key={option}
                         type="button"
                         className={cn(
-                          "inline-flex h-8 cursor-pointer items-center justify-center gap-1.5 whitespace-nowrap border-l border-slate-200 px-3 text-xs font-semibold transition-colors first:border-l-0",
+                          "inline-flex h-8 cursor-pointer items-center justify-center gap-1.5 whitespace-nowrap border-l border-slate-200 px-2.5 text-xs font-semibold transition-colors first:border-l-0",
                           option === kind
                             ? "bg-slate-900 text-white"
                             : "bg-white text-slate-700 hover:bg-slate-100"
@@ -448,7 +448,7 @@ export default function TrendsClientPage({
                         type="button"
                         disabled={disabled}
                         className={cn(
-                          "inline-flex h-8 cursor-pointer items-center justify-center whitespace-nowrap border-l border-slate-200 px-3 text-xs font-semibold transition-colors first:border-l-0",
+                          "inline-flex h-8 cursor-pointer items-center justify-center whitespace-nowrap border-l border-slate-200 px-2.5 text-xs font-semibold transition-colors first:border-l-0",
                           option.value === period
                             ? "bg-slate-900 text-white"
                             : "bg-white text-slate-700 hover:bg-slate-100",
@@ -499,7 +499,7 @@ export default function TrendsClientPage({
                       size="sm"
                       variant={active ? "default" : "outline"}
                       className={cn(
-                        "rounded-full px-3 py-1.5 text-xs font-semibold",
+                        "rounded-full px-2 py-1.5 text-xs font-semibold",
                         active
                           ? "border-slate-900 bg-slate-900 text-white"
                           : "border-slate-300 bg-white text-slate-700 hover:bg-slate-100"
