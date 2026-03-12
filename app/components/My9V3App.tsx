@@ -504,7 +504,12 @@ export default function My9V3App({
 
       const nextResponse: SubjectSearchResponse = {
         ok: true,
-        source: json.source === "tmdb" ? "tmdb" : "bangumi",
+        source:
+          json.source === "tmdb"
+            ? "tmdb"
+            : json.source === "itunes"
+              ? "itunes"
+              : "bangumi",
         kind,
         items: Array.isArray(json.items) ? json.items : [],
         topPickIds: Array.isArray(json.topPickIds) ? json.topPickIds : [],

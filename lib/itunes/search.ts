@@ -168,16 +168,13 @@ export function buildItunesSearchResponse(params: {
 
   return {
     ok: true,
-    source: "tmdb", // Trick the frontend source badge or just use a generic 'itunes' if frontend allows.
-                    // Assuming types support it, but looking at types.ts it only has 'bangumi' | 'tmdb'.
-                    // To stay type-safe without modifying too many frontend components right now. Let's cast it or leave it. 
-                    // Let's modify ShareSubject SearchResponse first if needed, otherwise use cast.
+    source: "itunes",
     kind,
     items,
     topPickIds,
     suggestions: createSuggestions(kind),
     noResultQuery: items.length === 0 && query.trim() ? query : null,
-  } as SubjectSearchResponse;
+  };
 }
 
 export async function searchItunesSong(params: {
