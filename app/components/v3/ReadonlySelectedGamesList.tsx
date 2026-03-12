@@ -49,7 +49,7 @@ function appleMusicLink(game: ShareGame): string {
   if (game.storeUrls?.apple) {
     return game.storeUrls.apple;
   }
-  const query = encodeURIComponent(game.name || "");
+  const query = encodeURIComponent(displayName(game));
   return `https://music.apple.com/cn/search?term=${query}`;
 }
 
