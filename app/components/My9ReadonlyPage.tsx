@@ -72,6 +72,7 @@ export default function My9ReadonlyPage({ kind, shareId, initialShareData }: My9
           games={games}
           subjectLabel={kindMeta.label}
           bangumiSearchCat={kindMeta.search.bangumiSearchCat}
+          kind={kind}
         />
 
         <SiteFooter className="w-full" />

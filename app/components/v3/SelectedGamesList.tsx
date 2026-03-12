@@ -56,6 +56,13 @@ function subjectLink(game: ShareGame, kind?: SubjectKind, cat?: number): string 
   return bangumiLink(game, cat);
 }
 
+function subjectSourceLabel(kind?: SubjectKind): string {
+  if (kind === "tv" || kind === "movie") {
+    return "TMDB";
+  }
+  return "Bangumi";
+}
+
 export function SelectedGamesList({
   games,
   subjectLabel,
@@ -146,7 +153,7 @@ export function SelectedGamesList({
                     href={subjectLink(game, kind, bangumiSearchCat)}
                     target="_blank"
                     rel="noopener noreferrer"
-                    title="在 Bangumi 查看"
+                    title={`在 ${subjectSourceLabel(kind)} 查看`}
                     className="rounded-md border border-border bg-muted p-1.5 text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
                   >
                     <Globe className="h-4 w-4" />

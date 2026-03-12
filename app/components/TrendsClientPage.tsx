@@ -97,6 +97,43 @@ function toBangumiLink(subjectId: string | undefined, name: string): string {
   return `https://bgm.tv/subject_search/${query}`;
 }
 
+function toTmdbTvLink(subjectId: string | undefined, name: string): string {
+  const normalizedId = String(subjectId || "").trim();
+  if (/^\d+$/.test(normalizedId)) {
+    return `https://www.themoviedb.org/tv/${normalizedId}`;
+  }
+
+  const query = encodeURIComponent(name.trim());
+  return `https://www.themoviedb.org/search/tv?query=${query}`;
+}
+
+function toTmdbMovieLink(subjectId: string | undefined, name: string): string {
+  const normalizedId = String(subjectId || "").trim();
+  if (/^\d+$/.test(normalizedId)) {
+    return `https://www.themoviedb.org/movie/${normalizedId}`;
+  }
+
+  const query = encodeURIComponent(name.trim());
+  return `https://www.themoviedb.org/search/movie?query=${query}`;
+}
+
+function toSubjectLink(kind: SubjectKind, subjectId: string | undefined, name: string): string {
+  if (kind === "tv") {
+    return toTmdbTvLink(subjectId, name);
+  }
+  if (kind === "movie") {
+    return toTmdbMovieLink(subjectId, name);
+  }
+  return toBangumiLink(subjectId, name);
+}
+
+function subjectSourceLabel(kind: SubjectKind): string {
+  if (kind === "tv" || kind === "movie") {
+    return "TMDB";
+  }
+  return "Bangumi";
+}
+
 function toTrendsCoverUrl(cover: string | null | undefined): string | null {
   if (!cover) return null;
 
@@ -196,6 +233,7 @@ function trimTrendsClientCache(cache: Map<string, TrendsClientCacheEntry>) {
 }
 
 interface TrendGameMiniCardProps {
+  kind: SubjectKind;
   rank: number;
   game: TrendGameItem | null;
   count: number;
@@ -203,8 +241,9 @@ interface TrendGameMiniCardProps {
   showReleaseYear?: boolean;
 }
 
-function TrendGameMiniCard({ rank, game, count, tagLabel, showReleaseYear = true }: TrendGameMiniCardProps) {
-  const bangumiUrl = game ? toBangumiLink(game.id, game.name) : null;
+function TrendGameMiniCard({ kind, rank, game, count, tagLabel, showReleaseYear = true }: TrendGameMiniCardProps) {
+  const subjectUrl = game ? toSubjectLink(kind, game.id, game.name) : null;
+  const sourceLabel = subjectSourceLabel(kind);
   const coverUrl = game ? toTrendsCoverUrl(game.cover) : null;
   const title = game ? game.localizedName || game.name : "暂无条目";
   const subtitle = game && game.localizedName && game.localizedName !== game.name ? game.name : null;
@@ -250,12 +289,12 @@ function TrendGameMiniCard({ rank, game, count, tagLabel, showReleaseYear = true
               </div>
             </div>
 
-            {bangumiUrl ? (
+            {subjectUrl ? (
               <a
-                href={bangumiUrl}
+                href={subjectUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                title="在 Bangumi 查看"
+                title={`在 ${sourceLabel} 查看`}
                 className="rounded-md border border-border bg-muted p-1.5 text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
               >
                 <Globe className="h-4 w-4" />
@@ -680,6 +719,7 @@ export default function TrendsClientPage({
                         <div className="space-y-2">
                           {topGames.map((game, gameIndex) => (
                             <TrendGameMiniCard
+                              kind={kind}
                               key={`${bucket.key}:${game.id}:${gameIndex}`}
                               rank={gameIndex + 1}
                               game={game}
@@ -704,6 +744,7 @@ export default function TrendsClientPage({
                     const tagLabel = view === "overall" ? null : bucket.label;
                     return (
                       <TrendGameMiniCard
+                        kind={kind}
                         key={bucket.key}
                         rank={rank}
                         game={game}
