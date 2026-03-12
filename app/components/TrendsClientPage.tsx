@@ -354,6 +354,9 @@ export default function TrendsClientPage({
   const skipFirstEffectRef = useRef(!shouldRefetchOnMount);
   const trendsClientCacheRef = useRef<Map<string, TrendsClientCacheEntry>>(new Map());
   const trendsRequestAbortRef = useRef<AbortController | null>(null);
+  const kindTabsScrollerRef = useRef<HTMLDivElement | null>(null);
+  const kindTabRefs = useRef<Partial<Record<SubjectKind, HTMLButtonElement | null>>>({});
+  const kindTabsAutoScrolledRef = useRef(false);
   const requestOverallPage = view === "overall" ? overallPage : 1;
   const requestYearPage: TrendYearPage = view === "year" ? yearPage : "recent";
 
@@ -467,6 +470,27 @@ export default function TrendsClientPage({
   }, [kind, period]);
 
   useEffect(() => {
+    const scroller = kindTabsScrollerRef.current;
+    const activeButton = kindTabRefs.current[kind];
+    if (!scroller || !activeButton) return;
+
+    const scrollerRect = scroller.getBoundingClientRect();
+    const activeRect = activeButton.getBoundingClientRect();
+    const targetLeft =
+      scroller.scrollLeft +
+      (activeRect.left - scrollerRect.left) -
+      (scrollerRect.width / 2 - activeRect.width / 2);
+    const maxLeft = Math.max(0, scroller.scrollWidth - scroller.clientWidth);
+    const clampedLeft = Math.min(maxLeft, Math.max(0, targetLeft));
+
+    scroller.scrollTo({
+      left: clampedLeft,
+      behavior: kindTabsAutoScrolledRef.current ? "smooth" : "auto",
+    });
+    kindTabsAutoScrolledRef.current = true;
+  }, [kind]);
+
+  useEffect(() => {
     let ticking = false;
     let lastScrollY = Math.max(window.scrollY, 0);
 
@@ -558,14 +582,17 @@ export default function TrendsClientPage({
             </div>
 
             <div className="space-y-2 flex flex-col items-start sm:items-end mt-auto">
-              <div className="overflow-x-auto sm:overflow-visible">
-                <div className="inline-flex overflow-hidden rounded-full border border-border bg-card">
+              <div ref={kindTabsScrollerRef} className="w-full max-w-full overflow-x-auto">
+                <div className="inline-flex min-w-max overflow-hidden rounded-full border border-border bg-card">
                   {SUBJECT_KIND_ORDER.map((option) => {
                     const optionMeta = getSubjectKindMeta(option);
                     return (
                       <button
                         key={option}
                         type="button"
+                        ref={(element) => {
+                          kindTabRefs.current[option] = element;
+                        }}
                         className={cn(
                           "inline-flex h-8 cursor-pointer items-center justify-center gap-1.5 whitespace-nowrap border-l border-border px-2.5 text-xs font-semibold transition-colors first:border-l-0",
                           option === kind
