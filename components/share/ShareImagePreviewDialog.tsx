@@ -227,7 +227,7 @@ export function ShareImagePreviewDialog({
         </div>
 
         <DialogFooter className="sm:justify-between">
-          <p className="text-xs text-muted-foreground">如果下载失败，可以尝试长按预览图保存。</p>
+          <p className="text-xs text-muted-foreground">如果下载失败，可以尝试长按预览图保存，或使用“生成分享链接”功能在系统浏览器打开下载。</p>
           <Button
             type="button"
             onClick={handleDownload}
