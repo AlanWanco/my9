@@ -100,24 +100,12 @@ function toBangumiLink(subjectId: string | undefined, name: string): string {
   return `https://bgm.tv/subject_search/${query}`;
 }
 
-function toBangumiCharacterLink(subjectId: string | undefined, name: string): string {
-  const normalizedId = String(subjectId || "").trim();
-  if (/^\d+$/.test(normalizedId)) {
-    return `https://bgm.tv/character/${normalizedId}`;
-  }
-
-  const query = encodeURIComponent(name.trim());
-  return `https://bgm.tv/search/mono_character/${query}`;
+function toBangumiCharacterLink(subjectId: string | undefined): string {
+  return `https://bgm.tv/character/${String(subjectId || "").trim()}`;
 }
 
-function toBangumiPersonLink(subjectId: string | undefined, name: string): string {
-  const normalizedId = String(subjectId || "").trim();
-  if (/^\d+$/.test(normalizedId)) {
-    return `https://bgm.tv/person/${normalizedId}`;
-  }
-
-  const query = encodeURIComponent(name.trim());
-  return `https://bgm.tv/search/mono_person/${query}`;
+function toBangumiPersonLink(subjectId: string | undefined): string {
+  return `https://bgm.tv/person/${String(subjectId || "").trim()}`;
 }
 
 function toTmdbTvLink(subjectId: string | undefined, name: string): string {
@@ -156,10 +144,10 @@ function toSubjectLink(kind: SubjectKind, subjectId: string | undefined, name: s
     return toTmdbMovieLink(subjectId, name);
   }
   if (kind === "character") {
-    return toBangumiCharacterLink(subjectId, name);
+    return toBangumiCharacterLink(subjectId);
   }
   if (kind === "person") {
-    return toBangumiPersonLink(subjectId, name);
+    return toBangumiPersonLink(subjectId);
   }
   return toBangumiLink(subjectId, name);
 }

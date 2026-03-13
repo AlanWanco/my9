@@ -33,19 +33,11 @@ function bangumiLink(game: ShareGame, cat?: number): string {
 }
 
 function bangumiCharacterLink(game: ShareGame): string {
-  const id = String(game.id || "").trim();
-  if (/^\d+$/.test(id)) {
-    return `https://bgm.tv/character/${id}`;
-  }
-  return `https://bgm.tv/search/mono_character/${encodeURIComponent(displayName(game))}`;
+  return `https://bgm.tv/character/${String(game.id || "").trim()}`;
 }
 
 function bangumiPersonLink(game: ShareGame): string {
-  const id = String(game.id || "").trim();
-  if (/^\d+$/.test(id)) {
-    return `https://bgm.tv/person/${id}`;
-  }
-  return `https://bgm.tv/search/mono_person/${encodeURIComponent(displayName(game))}`;
+  return `https://bgm.tv/person/${String(game.id || "").trim()}`;
 }
 
 function tmdbTvLink(game: ShareGame): string {
